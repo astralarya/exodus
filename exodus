@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+SOURCE="$1"
+DESTINATION="$2"
+LIST_FILE="${3-$(mktemp --directory)/fpart-files}"
+
+threads="$(($(nproc --all) * 4))"
+
+
+cd "$SOURCE" &&
+
+time fpart -zz -n 1 -o "$LIST_FILE" . &&
+mv "$LIST_FILE.0" "$LIST_FILE" &&
+
+time parallel --will-cite --jobs "${threads}" --pipepart --round-robin --delay .1 --block 1M \
+    --arg-file "$LIST_FILE" \
+    sudo "cpio -dpmL \"$DESTINATION\""
